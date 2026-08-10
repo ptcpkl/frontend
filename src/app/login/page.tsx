@@ -34,6 +34,7 @@ function LoginForm() {
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
+        credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email.trim().toLowerCase(), password }),
       });
@@ -43,10 +44,20 @@ function LoginForm() {
         return;
       }
 
+      const sessionResponse = await fetch('/api/auth/session', {
+        cache: 'no-store',
+        credentials: 'same-origin',
+      });
+      const sessionPayload = await sessionResponse.json();
+      if (!sessionPayload.authenticated || !sessionPayload.user) {
+        setError('Login diterima, tetapi cookie session tidak tersimpan. Pastikan frontend dan backend terbaru sudah direstart.');
+        return;
+      }
+
       const requested = searchParams.get('from');
       const safeRequested = requested?.startsWith('/') && !requested.startsWith('//') ? requested : null;
       notifyAuthSessionChanged();
-      router.replace(safeRequested ?? (payload.user.role === 'Admin' ? '/admin/dashboard' : '/dashboard'));
+      router.replace(safeRequested ?? (sessionPayload.user.role === 'Admin' ? '/admin/dashboard' : '/dashboard'));
       router.refresh();
     } catch {
       setError('Layanan login belum dapat dijangkau. Coba beberapa saat lagi.');

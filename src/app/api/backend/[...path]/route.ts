@@ -2,6 +2,7 @@ import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import {
   ACCESS_TOKEN_COOKIE,
+  isAuthSession,
   REFRESH_TOKEN_COOKIE,
   type AuthSession,
 } from '@/lib/auth';
@@ -54,13 +55,14 @@ async function proxy(request: Request, context: RouteContext) {
           method: 'POST',
           body: JSON.stringify({ refreshToken }),
         });
+        if (!isAuthSession(renewed)) throw new Error('Invalid refresh response');
         upstream = await send(renewed.token);
       } catch {
         const response = NextResponse.json(
           { success: false, message: 'Sesi telah berakhir. Silakan login kembali.', data: null, errors: [] },
           { status: 401 },
         );
-        clearAuthCookies(response);
+        clearAuthCookies(response, request);
         return response;
       }
     }
@@ -72,7 +74,7 @@ async function proxy(request: Request, context: RouteContext) {
         'Cache-Control': 'private, no-store',
       },
     });
-    if (renewed) setAuthCookies(response, renewed);
+    if (renewed) setAuthCookies(response, renewed, request);
     return response;
   } catch {
     return NextResponse.json(

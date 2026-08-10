@@ -10,14 +10,25 @@ import {
   type AuthSession,
 } from '@/lib/auth';
 
-const baseOptions = {
-  httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: 'lax' as const,
-  path: '/',
-};
+function cookieOptions(request: Request) {
+  const requestUrl = new URL(request.url);
+  const forwardedProtocol = request.headers.get('x-forwarded-proto')
+    ?.split(',')[0]
+    ?.trim()
+    .toLowerCase();
 
-export function setAuthCookies(response: NextResponse, session: AuthSession) {
+  return {
+    httpOnly: true,
+    // `next start` memakai NODE_ENV=production, termasuk saat dijalankan lewat
+    // HTTP lokal. Cookie Secure hanya boleh dipakai jika request memang HTTPS.
+    secure: requestUrl.protocol === 'https:' || forwardedProtocol === 'https',
+    sameSite: 'lax' as const,
+    path: '/',
+  };
+}
+
+export function setAuthCookies(response: NextResponse, session: AuthSession, request: Request) {
+  const baseOptions = cookieOptions(request);
   response.cookies.set(ACCESS_TOKEN_COOKIE, session.token, {
     ...baseOptions,
     maxAge: getCookieMaxAge(session.expiresAt, ACCESS_TOKEN_MAX_AGE_SECONDS),
@@ -32,7 +43,8 @@ export function setAuthCookies(response: NextResponse, session: AuthSession) {
   });
 }
 
-export function clearAuthCookies(response: NextResponse) {
+export function clearAuthCookies(response: NextResponse, request: Request) {
+  const baseOptions = cookieOptions(request);
   for (const name of [ACCESS_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE, ROLE_COOKIE]) {
     response.cookies.set(name, '', { ...baseOptions, maxAge: 0 });
   }

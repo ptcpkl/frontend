@@ -49,6 +49,7 @@ export default function RegisterPage() {
     try {
       const response = await fetch('/api/auth/register', {
         method: 'POST',
+        credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...form, name: form.name.trim(), email: form.email.trim().toLowerCase(), nip: form.nip.trim() }),
       });
@@ -58,6 +59,16 @@ export default function RegisterPage() {
         const field = fieldForServerError(message) as FieldName | null;
         if (field) setErrors((current) => ({ ...current, [field]: message }));
         else setGeneralError(message);
+        return;
+      }
+
+      const sessionResponse = await fetch('/api/auth/session', {
+        cache: 'no-store',
+        credentials: 'same-origin',
+      });
+      const sessionPayload = await sessionResponse.json();
+      if (!sessionPayload.authenticated || !sessionPayload.user) {
+        setGeneralError('Akun berhasil dibuat, tetapi cookie session tidak tersimpan. Restart frontend dan backend terbaru, lalu login.');
         return;
       }
       notifyAuthSessionChanged();

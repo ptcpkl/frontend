@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { clearAuthCookies, setAuthCookies } from '@/lib/auth-cookies';
 import { resolveSession } from '@/lib/session';
 
-export async function GET() {
+export async function GET(request: Request) {
   const session = await resolveSession();
   const response = NextResponse.json(
     session
@@ -11,7 +11,7 @@ export async function GET() {
     { headers: { 'Cache-Control': 'private, no-store' } },
   );
 
-  if (session?.renewed) setAuthCookies(response, session.renewed);
-  if (!session) clearAuthCookies(response);
+  if (session?.renewed) setAuthCookies(response, session.renewed, request);
+  if (!session) clearAuthCookies(response, request);
   return response;
 }

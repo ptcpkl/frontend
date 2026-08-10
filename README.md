@@ -4,6 +4,8 @@ Frontend Next.js 16 untuk katalog dan pendaftaran pelatihan PorTC. Browser tidak
 
 ## Menjalankan lokal
 
+Jalankan backend terlebih dahulu dan pastikan `http://localhost:5000/health` mengembalikan status sehat. Setelah itu jalankan frontend:
+
 ```bash
 npm ci
 cp .env.example .env.local
@@ -17,6 +19,9 @@ API_BASE_URL=http://localhost:5000/api
 ```
 
 `API_BASE_URL` sengaja tidak memakai prefix `NEXT_PUBLIC_`, sehingga alamat origin internal tetap berada di sisi server.
+Nilainya harus berupa base API backend (berakhir dengan `/api`), bukan URL GitHub dan bukan URL resource seperti `/api/trainings`.
+
+Cookie sesi mengikuti protokol request: non-`Secure` untuk HTTP lokal dan `Secure` untuk HTTPS. Karena itu alur login yang sama dapat dipakai oleh `npm run dev`, `npm start`, dan deployment HTTPS tanpa mengubah source.
 
 ## Alur aplikasi
 

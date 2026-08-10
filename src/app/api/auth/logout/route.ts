@@ -4,7 +4,7 @@ import { REFRESH_TOKEN_COOKIE } from '@/lib/auth';
 import { clearAuthCookies } from '@/lib/auth-cookies';
 import { backendRequest } from '@/lib/backend';
 
-export async function POST() {
+export async function POST(request: Request) {
   const cookieStore = await cookies();
   const refreshToken = cookieStore.get(REFRESH_TOKEN_COOKIE)?.value;
 
@@ -20,6 +20,6 @@ export async function POST() {
   }
 
   const response = NextResponse.json({ success: true });
-  clearAuthCookies(response);
+  clearAuthCookies(response, request);
   return response;
 }
