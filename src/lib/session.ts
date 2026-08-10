@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers';
 import {
   ACCESS_TOKEN_COOKIE,
+  isAuthSession,
   REFRESH_TOKEN_COOKIE,
   toSessionUser,
   type AuthSession,
@@ -34,6 +35,7 @@ export async function resolveSession(): Promise<ResolvedSession | null> {
       method: 'POST',
       body: JSON.stringify({ refreshToken }),
     });
+    if (!isAuthSession(renewed)) return null;
     return { user: toSessionUser(renewed), renewed };
   } catch {
     return null;

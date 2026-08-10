@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { toSessionUser, type AuthSession } from '@/lib/auth';
+import { isAuthSession, toSessionUser, type AuthSession } from '@/lib/auth';
 import { setAuthCookies } from '@/lib/auth-cookies';
 import { backendRequest, BackendError } from '@/lib/backend';
 
@@ -17,11 +17,22 @@ export async function POST(request: Request) {
       }),
     });
 
+    if (!isAuthSession(session)) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Backend belum memakai kontrak session terbaru. Pull dan restart backend, lalu coba register lagi.',
+          errors: [],
+        },
+        { status: 502 },
+      );
+    }
+
     const response = NextResponse.json(
       { success: true, user: toSessionUser(session) },
-      { status: 201 },
+      { status: 201, headers: { 'Cache-Control': 'private, no-store' } },
     );
-    setAuthCookies(response, session);
+    setAuthCookies(response, session, request);
     return response;
   } catch (error) {
     const backendError = error instanceof BackendError ? error : null;
