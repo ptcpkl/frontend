@@ -1,10 +1,6 @@
 import { NextResponse } from 'next/server';
-import {
-  ACCESS_TOKEN_COOKIE,
-  getSessionMaxAge,
-  ROLE_COOKIE,
-  type AuthSession,
-} from '@/lib/auth';
+import { toSessionUser, type AuthSession } from '@/lib/auth';
+import { setAuthCookies } from '@/lib/auth-cookies';
 import { backendRequest, BackendError } from '@/lib/backend';
 
 export async function POST(request: Request) {
@@ -15,17 +11,8 @@ export async function POST(request: Request) {
       body: JSON.stringify(body),
     });
 
-    const response = NextResponse.json({ success: true, user: session });
-    const options = {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax' as const,
-      maxAge: getSessionMaxAge(session.expiresAt),
-      path: '/',
-    };
-
-    response.cookies.set(ACCESS_TOKEN_COOKIE, session.token, options);
-    response.cookies.set(ROLE_COOKIE, session.role, options);
+    const response = NextResponse.json({ success: true, user: toSessionUser(session) });
+    setAuthCookies(response, session);
     return response;
   } catch (error) {
     const backendError = error instanceof BackendError ? error : null;

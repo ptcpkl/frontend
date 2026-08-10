@@ -3,12 +3,8 @@
 @tailwind utilities;
 
 :root {
-  --ink: #101b2d;
-  --paper: #f4f1e9;
-  --paper-deep: #e9e3d8;
-  --signal: #d92d20;
-  --blue: #1d4ed8;
-  --muted: #64748b;
+  --navy: #0f172a;
+  --accent: #0284c7;
 }
 
 * {
@@ -20,36 +16,11 @@ html {
 }
 
 body {
-  margin: 0;
-  background: var(--paper);
-  color: var(--ink);
-  font-family: Arial, Helvetica, sans-serif;
-  text-rendering: optimizeLegibility;
+  @apply m-0 bg-slate-50 text-slate-900 antialiased;
 }
 
 ::selection {
-  background: #d92d2033;
-  color: var(--ink);
-}
-
-.display-type {
-  font-family: Georgia, 'Times New Roman', serif;
-  letter-spacing: -0.045em;
-}
-
-.technical-label {
-  font-family: 'Courier New', Courier, monospace;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-
-.grid-paper {
-  background-image:
-    linear-gradient(to right, rgba(16, 27, 45, 0.06) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(16, 27, 45, 0.06) 1px, transparent 1px);
-  background-size: 32px 32px;
+  @apply bg-sky-200 text-slate-950;
 }
 
 @media (prefers-reduced-motion: reduce) {

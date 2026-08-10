@@ -1,10 +1,12 @@
 export const ACCESS_TOKEN_COOKIE = 'ptc_access_token';
+export const REFRESH_TOKEN_COOKIE = 'ptc_refresh_token';
 export const ROLE_COOKIE = 'ptc_role';
-export const SESSION_MAX_AGE_SECONDS = 60 * 60 * 8;
+export const ACCESS_TOKEN_MAX_AGE_SECONDS = 60 * 60;
+export const REFRESH_TOKEN_MAX_AGE_SECONDS = 60 * 60 * 24 * 30;
 
-export function getSessionMaxAge(expiresAt: string): number {
+export function getCookieMaxAge(expiresAt: string, maximum: number): number {
   const remaining = Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000);
-  return Math.max(0, Math.min(SESSION_MAX_AGE_SECONDS, remaining));
+  return Math.max(0, Math.min(maximum, remaining));
 }
 
 export const DEPARTMENTS = [
@@ -33,4 +35,11 @@ export interface SessionUser {
 export interface AuthSession extends SessionUser {
   token: string;
   expiresAt: string;
+  refreshToken: string;
+  refreshExpiresAt: string;
+}
+
+export function toSessionUser(session: AuthSession): SessionUser {
+  const { id, fullName, email, department, nip, role } = session;
+  return { id, fullName, email, department, nip, role };
 }

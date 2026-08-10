@@ -10,15 +10,18 @@ export default function LogoutButton() {
     <button
       type="button"
       onClick={async () => {
-        await fetch('/api/auth/logout', { method: 'POST' });
-        router.replace('/login');
-        router.refresh();
+        try {
+          await fetch('/api/auth/logout', { method: 'POST' });
+        } finally {
+          router.replace('/login');
+          router.refresh();
+        }
       }}
-      className="ml-2 grid h-9 w-9 place-items-center border border-white/20 text-slate-300 hover:border-[#d92d20] hover:bg-[#d92d20] hover:text-white"
-      aria-label="Keluar"
-      title="Keluar"
+      className="ml-1 inline-flex items-center gap-1.5 rounded-md border border-slate-700 bg-slate-900/60 px-2.5 py-1.5 text-xs font-semibold text-slate-300 transition hover:border-rose-500/40 hover:bg-rose-500/10 hover:text-rose-300"
+      title="Keluar dari sesi"
     >
-      <LogOut className="h-4 w-4" />
+      <LogOut className="h-3.5 w-3.5" />
+      <span className="hidden sm:inline">Logout</span>
     </button>
   );
 }
