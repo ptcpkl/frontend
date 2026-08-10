@@ -4,6 +4,7 @@ import type {
   CreateBookingDto,
   DashboardSummary,
   Training,
+  TrainingInput,
 } from '@/types';
 
 interface ApiEnvelope<T> {
@@ -56,6 +57,9 @@ export const TrainingService = {
     return request<Training[]>(`/trainings${query}`);
   },
   getById: (id: string | number) => request<Training>(`/trainings/${id}`),
+  create: (data: TrainingInput) => request<Training>('/trainings', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id: number, data: TrainingInput) => request<Training>(`/trainings/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  remove: (id: number) => request<void>(`/trainings/${id}`, { method: 'DELETE' }),
 };
 
 export const BookingService = {

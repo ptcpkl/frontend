@@ -1,6 +1,6 @@
 # PorTC Learning Hub
 
-Frontend Next.js 16 untuk katalog dan pendaftaran pelatihan PorTC. Browser tidak menyimpan token di local storage dan tidak mengakses database langsung. Route handler Next.js bertindak sebagai BFF: token dari .NET API disimpan pada cookie `HttpOnly`, lalu request browser diteruskan ke backend dengan bearer token.
+Frontend Next.js 16 untuk katalog dan pendaftaran pelatihan PorTC. Browser tidak menyimpan token di local storage dan tidak mengakses database langsung. Route handler Next.js bertindak sebagai BFF: access token dan refresh token dari .NET API disimpan pada cookie `HttpOnly`, access token diperbarui otomatis dari session server-side, lalu request browser diteruskan ke backend dengan bearer token.
 
 ## Menjalankan lokal
 
@@ -26,6 +26,8 @@ API_BASE_URL=http://localhost:5000/api
 - `/trainings/[id]` mengirim pendaftaran berdasarkan profil pengguna yang login.
 - `/dashboard` hanya menampilkan booking milik pengguna.
 - `/admin/dashboard` memerlukan role admin dan dapat menyetujui, menolak, atau membatalkan pendaftaran.
+- Admin dapat membuat, mengedit, menutup, dan menghapus pelatihan yang belum memiliki riwayat pendaftaran.
+- Navbar berubah berdasarkan session dan role; seluruh halaman memakai tampilan navy-sky klasik PorTC dengan footer responsif.
 
 ## Validasi
 

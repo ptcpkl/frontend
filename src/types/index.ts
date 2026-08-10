@@ -14,6 +14,11 @@ export interface Training {
   updatedAt: string;
 }
 
+export type TrainingInput = Pick<
+  Training,
+  'title' | 'category' | 'description' | 'syllabus' | 'location' | 'startDate' | 'endDate' | 'quota' | 'status'
+>;
+
 export type BookingStatus = 'Pending' | 'Approved' | 'Rejected' | 'Cancelled';
 
 export interface Booking {
