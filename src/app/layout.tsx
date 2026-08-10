@@ -3,18 +3,17 @@ import Navbar from '@/components/layout/Navbar';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'PorTC - Pertamina Training & Consulting',
-  description: 'Portal pelatihan enterprise Pertamina Training & Consulting.',
+  title: {
+    default: 'PorTC Learning Hub',
+    template: '%s · PorTC',
+  },
+  description: 'Portal katalog dan pendaftaran pelatihan Pertamina Training & Consulting.',
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="id">
-      <body className="min-h-screen bg-slate-50">
+      <body className="min-h-screen">
         <Navbar />
         {children}
       </body>

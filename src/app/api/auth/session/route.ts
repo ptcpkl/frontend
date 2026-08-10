@@ -2,14 +2,9 @@ import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/session';
 
 export async function GET() {
-  const session = getSession();
-
-  if (!session) {
-    return NextResponse.json({ authenticated: false }, { status: 200 });
-  }
-
-  return NextResponse.json({
-    authenticated: true,
-    user: session,
-  });
+  const session = await getSession();
+  return NextResponse.json(
+    session ? { authenticated: true, user: session } : { authenticated: false },
+    { headers: { 'Cache-Control': 'private, no-store' } },
+  );
 }

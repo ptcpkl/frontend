@@ -4,32 +4,45 @@ export interface Training {
   category: string;
   description: string;
   syllabus: string;
-  startDate: string;
-  duration: string;
   location: string;
+  startDate: string;
+  endDate: string;
   quota: number;
   availableSeats: number;
-  imageUrl?: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
-export type BookingStatus = 'Pending' | 'Approved' | 'Rejected';
+export type BookingStatus = 'Pending' | 'Approved' | 'Rejected' | 'Cancelled';
 
 export interface Booking {
   id: number;
   trainingId: number;
-  trainingTitle?: string;
-  employeeName: string;
+  userId: number | null;
+  trainingTitle: string;
+  fullName: string;
   nip: string;
   department: string;
   email: string;
   status: BookingStatus;
   createdAt: string;
+  updatedAt: string;
 }
 
 export interface CreateBookingDto {
   trainingId: number;
-  employeeName: string;
-  nip: string;
-  department: string;
-  email: string;
+}
+
+export interface DashboardSummary {
+  totalTrainings: number;
+  totalBookings: number;
+  pendingBookings: number;
+  approvedBookings: number;
+  rejectedBookings: number;
+  popularTrainings: Array<{
+    trainingId: number;
+    title: string;
+    participantCount: number;
+  }>;
 }

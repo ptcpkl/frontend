@@ -1,287 +1,86 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import {
-  AlertCircle,
-  Award,
-  CalendarDays,
-  CheckCircle2,
-  Clock,
-  GraduationCap,
-  LayoutDashboard,
-  MapPin,
-  RefreshCw,
-  User,
-  XCircle,
-} from 'lucide-react';
-import { BookingService } from '@/lib/api';
+import { AlertTriangle, ArrowUpRight, CalendarDays, Loader2, MapPin, RotateCcw } from 'lucide-react';
+import { ApiError, BookingService } from '@/lib/api';
+import type { SessionUser } from '@/lib/auth';
 import type { Booking, BookingStatus } from '@/types';
 
-const STATUS_STYLES: Record<BookingStatus, string> = {
-  Pending: 'bg-amber-50 text-amber-700 ring-amber-600/20',
-  Approved: 'bg-emerald-50 text-emerald-700 ring-emerald-600/20',
-  Rejected: 'bg-rose-50 text-rose-700 ring-rose-600/20',
+const statusStyle: Record<BookingStatus, string> = {
+  Pending: 'border-amber-500 bg-amber-50 text-amber-800',
+  Approved: 'border-emerald-600 bg-emerald-50 text-emerald-800',
+  Rejected: 'border-[#d92d20] bg-red-50 text-[#b42318]',
+  Cancelled: 'border-slate-400 bg-slate-100 text-slate-600',
 };
-
-const STATUS_LABELS: Record<BookingStatus, string> = {
-  Pending: 'Menunggu Verifikasi',
-  Approved: 'Diterima',
-  Rejected: 'Ditolak',
-};
-
-const STATUS_ICONS: Record<BookingStatus, React.ReactNode> = {
-  Pending: <Clock className="h-5 w-5" />,
-  Approved: <CheckCircle2 className="h-5 w-5" />,
-  Rejected: <XCircle className="h-5 w-5" />,
-};
-
-const STATUS_DESCRIPTIONS: Record<BookingStatus, string> = {
-  Pending: 'Pendaftaran Anda sedang menunggu verifikasi oleh admin.',
-  Approved: 'Selamat! Pendaftaran Anda telah diterima.',
-  Rejected: 'Mohon maaf, pendaftaran Anda ditolak.',
-};
-
-function formatDate(dateString: string): string {
-  return new Date(dateString).toLocaleDateString('id-ID', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  });
-}
 
 export default function UserDashboardPage() {
-  const router = useRouter();
+  const [session, setSession] = useState<SessionUser | null>(null);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [user, setUser] = useState<{ name: string; email: string; nip: string; department: string } | null>(null);
+  const [busyId, setBusyId] = useState<number | null>(null);
 
-  const fetchSession = useCallback(async () => {
-    try {
-      const response = await fetch('/api/auth/session');
-      const data = await response.json();
-      if (data.authenticated) {
-        setUser(data.user);
-      } else {
-        router.replace('/login');
-      }
-    } catch {
-      router.replace('/login');
-    }
-  }, [router]);
-
-  const fetchBookings = useCallback(async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await BookingService.getByEmail('berq@pertamina.com');
-      setBookings(data);
-    } catch {
-      setError('Gagal memuat data pendaftaran. Coba lagi.');
+      const [sessionResponse, bookingData] = await Promise.all([
+        fetch('/api/auth/session', { cache: 'no-store' }).then((response) => response.json()),
+        BookingService.getMine(),
+      ]);
+      setSession(sessionResponse.user ?? null);
+      setBookings(bookingData);
+    } catch (cause) {
+      setError(cause instanceof ApiError ? cause.message : 'Dashboard belum dapat dimuat.');
     } finally {
       setLoading(false);
     }
   }, []);
 
-  useEffect(() => {
-    fetchSession();
-    fetchBookings();
-  }, [fetchSession, fetchBookings]);
+  // Data ini memang disinkronkan dari API saat halaman dibuka.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { void load(); }, [load]);
 
-  const stats = useMemo(
-    () => ({
-      total: bookings.length,
-      approved: bookings.filter((b) => b.status === 'Approved').length,
-      pending: bookings.filter((b) => b.status === 'Pending').length,
-      rejected: bookings.filter((b) => b.status === 'Rejected').length,
-    }),
-    [bookings],
-  );
+  const activeCount = useMemo(() => bookings.filter((item) => item.status === 'Pending' || item.status === 'Approved').length, [bookings]);
+
+  const cancel = async (booking: Booking) => {
+    setBusyId(booking.id);
+    try {
+      const updated = await BookingService.cancel(booking.id);
+      setBookings((current) => current.map((item) => item.id === updated.id ? updated : item));
+    } catch (cause) {
+      setError(cause instanceof ApiError ? cause.message : 'Pendaftaran belum dapat dibatalkan.');
+    } finally {
+      setBusyId(null);
+    }
+  };
 
   return (
-    <main className="min-h-screen bg-slate-50">
-      <header className="bg-slate-900">
-        <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-sky-500/15 ring-1 ring-inset ring-sky-500/30">
-              <LayoutDashboard className="h-6 w-6 text-sky-400" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-white sm:text-3xl">Dashboard Saya</h1>
-              <p className="mt-1 text-sm text-slate-300">
-                Pantau status pendaftaran pelatihan Anda.
-              </p>
-            </div>
-          </div>
+    <main className="min-h-screen bg-[#f4f1e9]">
+      <header className="border-b border-[#101b2d]/20 bg-white">
+        <div className="mx-auto grid max-w-[1440px] gap-8 px-5 py-12 sm:px-10 lg:grid-cols-[1fr_280px] lg:px-16">
+          <div><p className="technical-label text-[#d92d20]">Employee workspace</p><h1 className="display-type mt-3 text-5xl sm:text-6xl">Perjalanan belajar {session?.fullName?.split(' ')[0] ?? 'Anda'}.</h1><p className="mt-4 text-sm text-slate-600">Pantau status persetujuan dan jadwal program yang sudah dipilih.</p></div>
+          <div className="grid grid-cols-2 gap-px bg-[#101b2d]/20 text-center"><div className="bg-[#101b2d] p-6 text-white"><p className="font-mono text-4xl font-bold">{activeCount}</p><p className="mt-2 text-xs text-slate-400">Aktif</p></div><div className="bg-white p-6"><p className="font-mono text-4xl font-bold">{bookings.length}</p><p className="mt-2 text-xs text-slate-500">Total</p></div></div>
         </div>
       </header>
 
-      <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        {/* User info card */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-sky-500 to-sky-700 text-white">
-              <User className="h-7 w-7" />
-            </div>
-            <div>
-              <h2 className="text-lg font-bold text-slate-900">{user?.name ?? 'Berq Pratama'}</h2>
-              <p className="text-sm text-slate-500">{user?.email ?? 'berq@pertamina.com'}</p>
-            </div>
-            <div className="ml-auto flex items-center gap-2 rounded-full bg-slate-100 px-4 py-1.5 text-xs font-semibold text-slate-600">
-              <Award className="h-4 w-4 text-sky-600" />
-              NIP: {user?.nip ?? '99887766'}
-            </div>
-          </div>
-        </div>
-
-        {/* Stats */}
-        <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <StatCard label="Total Pendaftaran" value={stats.total} icon={<GraduationCap className="h-5 w-5" />} accent="text-slate-900 bg-slate-100" />
-          <StatCard label="Diterima" value={stats.approved} icon={<CheckCircle2 className="h-5 w-5" />} accent="text-emerald-700 bg-emerald-50" />
-          <StatCard label="Menunggu" value={stats.pending} icon={<Clock className="h-5 w-5" />} accent="text-amber-700 bg-amber-50" />
-          <StatCard label="Ditolak" value={stats.rejected} icon={<XCircle className="h-5 w-5" />} accent="text-rose-700 bg-rose-50" />
-        </div>
-
-        {error && (
-          <div className="mt-6 flex items-start gap-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
-            <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
-            <span>{error}</span>
+      <section className="mx-auto max-w-[1440px] px-5 py-10 sm:px-10 lg:px-16">
+        {error && <div className="mb-6 flex gap-3 border border-[#d92d20] bg-red-50 p-4 text-sm text-[#b42318]"><AlertTriangle className="h-5 w-5 shrink-0" />{error}</div>}
+        {loading ? <div className="grid min-h-72 place-items-center"><Loader2 className="h-7 w-7 animate-spin text-[#d92d20]" /></div> : bookings.length === 0 ? (
+          <div className="grid-paper border border-[#101b2d]/20 bg-white px-6 py-24 text-center"><h2 className="display-type text-4xl">Belum ada program yang dipilih.</h2><p className="mt-3 text-sm text-slate-600">Katalog sudah siap untuk dijelajahi.</p><Link href="/trainings" className="mt-7 inline-flex items-center gap-2 bg-[#101b2d] px-5 py-3 text-sm font-black text-white">Buka katalog <ArrowUpRight className="h-4 w-4" /></Link></div>
+        ) : (
+          <div className="space-y-4">
+            {bookings.map((booking) => (
+              <article key={booking.id} className="grid border border-[#101b2d]/20 bg-white lg:grid-cols-[150px_1fr_190px]">
+                <div className="border-b border-[#101b2d]/15 p-6 lg:border-b-0 lg:border-r"><p className="technical-label text-slate-400">Booking</p><p className="mt-2 font-mono text-2xl font-bold">#{String(booking.id).padStart(4, '0')}</p><span className={`mt-5 inline-flex border px-2 py-1 text-[10px] font-black uppercase tracking-wider ${statusStyle[booking.status]}`}>{booking.status}</span></div>
+                <div className="p-6"><p className="technical-label text-[#d92d20]">Program terdaftar</p><h2 className="display-type mt-2 text-3xl">{booking.trainingTitle}</h2><div className="mt-5 flex flex-wrap gap-5 text-xs text-slate-600"><span className="flex items-center gap-2"><CalendarDays className="h-4 w-4" /> Didaftar {new Date(booking.createdAt).toLocaleDateString('id-ID')}</span><span className="flex items-center gap-2"><MapPin className="h-4 w-4" /> {booking.department}</span></div></div>
+                <div className="flex flex-col justify-center gap-3 border-t border-[#101b2d]/15 p-6 lg:border-l lg:border-t-0"><Link href={`/trainings/${booking.trainingId}`} className="flex items-center justify-between border border-[#101b2d] px-4 py-3 text-sm font-black">Lihat program <ArrowUpRight className="h-4 w-4" /></Link>{(booking.status === 'Pending' || booking.status === 'Approved') && <button disabled={busyId === booking.id} onClick={() => window.confirm('Batalkan pendaftaran ini?') && cancel(booking)} className="flex items-center justify-center gap-2 px-4 py-3 text-sm font-bold text-[#b42318] hover:bg-red-50 disabled:opacity-50">{busyId === booking.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />} Batalkan</button>}</div>
+              </article>
+            ))}
           </div>
         )}
-
-        {/* Bookings list */}
-        <div className="mt-8">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-slate-900">Riwayat Pendaftaran</h2>
-            <button
-              type="button"
-              onClick={fetchBookings}
-              disabled={loading}
-              className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100 disabled:opacity-50"
-            >
-              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-              Muat Ulang
-            </button>
-          </div>
-
-          {loading ? (
-            <div className="mt-4 space-y-4">
-              {Array.from({ length: 2 }).map((_, index) => (
-                <div key={index} className="animate-pulse rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                  <div className="h-5 w-48 rounded bg-slate-200" />
-                  <div className="mt-3 h-4 w-32 rounded bg-slate-100" />
-                  <div className="mt-4 h-8 w-28 rounded-full bg-slate-200" />
-                </div>
-              ))}
-            </div>
-          ) : bookings.length === 0 ? (
-            <div className="mt-4 flex flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white px-6 py-16 text-center shadow-sm">
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-100">
-                <GraduationCap className="h-7 w-7 text-slate-400" />
-              </div>
-              <h3 className="mt-4 text-base font-semibold text-slate-900">Belum Ada Pendaftaran</h3>
-              <p className="mt-1 max-w-sm text-sm text-slate-500">
-                Anda belum mendaftar pelatihan apa pun. Jelajahi katalog pelatihan untuk memulai.
-              </p>
-              <Link
-                href="/trainings"
-                className="mt-6 inline-flex items-center gap-2 rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-700"
-              >
-                <GraduationCap className="h-4 w-4" />
-                Lihat Katalog Pelatihan
-              </Link>
-            </div>
-          ) : (
-            <div className="mt-4 space-y-4">
-              {bookings.map((booking) => (
-                <div
-                  key={booking.id}
-                  className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:shadow-md"
-                >
-                  <div className="flex flex-wrap items-start justify-between gap-4">
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="inline-flex items-center rounded-full bg-sky-50 px-2.5 py-0.5 text-xs font-semibold text-sky-700 ring-1 ring-inset ring-sky-600/20">
-                          #{booking.id}
-                        </span>
-                        <span className="text-xs text-slate-400">
-                          Didaftarkan {formatDate(booking.createdAt)}
-                        </span>
-                      </div>
-                      <h3 className="mt-2 text-base font-bold text-slate-900">
-                        {booking.trainingTitle ?? `Pelatihan #${booking.trainingId}`}
-                      </h3>
-                      <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-500">
-                        <span className="inline-flex items-center gap-1.5">
-                          <CalendarDays className="h-4 w-4 text-slate-400" />
-                          {booking.department}
-                        </span>
-                        <span className="inline-flex items-center gap-1.5">
-                          <MapPin className="h-4 w-4 text-slate-400" />
-                          {booking.nip}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col items-end gap-2">
-                      <span
-                        className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold ring-1 ring-inset ${STATUS_STYLES[booking.status]}`}
-                      >
-                        {STATUS_ICONS[booking.status]}
-                        {STATUS_LABELS[booking.status]}
-                      </span>
-                      <p className="max-w-xs text-right text-xs text-slate-500">
-                        {STATUS_DESCRIPTIONS[booking.status]}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* CTA */}
-        <div className="mt-8 rounded-2xl border border-sky-200 bg-gradient-to-r from-sky-50 to-sky-100 p-6">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <h3 className="text-base font-bold text-slate-900">Ingin mengikuti pelatihan lain?</h3>
-              <p className="mt-1 text-sm text-slate-600">
-                Jelajahi katalog pelatihan PorTC dan daftarkan diri Anda.
-              </p>
-            </div>
-            <Link
-              href="/trainings"
-              className="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-700"
-            >
-              <GraduationCap className="h-4 w-4" />
-              Katalog Pelatihan
-            </Link>
-          </div>
-        </div>
       </section>
     </main>
-  );
-}
-
-function StatCard({
-  label,
-  value,
-  icon,
-  accent,
-}: {
-  label: string;
-  value: number;
-  icon: React.ReactNode;
-  accent: string;
-}) {
-  return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${accent}`}>{icon}</div>
-      <p className="mt-3 text-2xl font-bold text-slate-900">{value}</p>
-      <p className="text-sm text-slate-500">{label}</p>
-    </div>
   );
 }
