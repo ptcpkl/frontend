@@ -2,101 +2,80 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Flame, GraduationCap, LayoutDashboard, LogIn, ShieldCheck, User } from 'lucide-react';
+import { BookOpen, LayoutDashboard, LogIn, ShieldCheck } from 'lucide-react';
+import type { SessionUser } from '@/lib/auth';
 import LogoutButton from './LogoutButton';
-
-interface SessionUser {
-  name: string;
-  email: string;
-  department: string;
-  nip: string;
-  role: 'admin' | 'user';
-}
 
 export default function Navbar() {
   const [session, setSession] = useState<SessionUser | null>(null);
-  const [loading, setLoading] = useState(true);
 
-  const fetchSession = useCallback(async () => {
+  const loadSession = useCallback(async () => {
     try {
       const response = await fetch('/api/auth/session', { cache: 'no-store' });
-      const data = await response.json();
-      if (data.authenticated && data.user) {
-        setSession(data.user);
-      } else {
-        setSession(null);
-      }
+      const payload = await response.json();
+      setSession(payload.authenticated ? payload.user : null);
     } catch {
       setSession(null);
-    } finally {
-      setLoading(false);
     }
   }, []);
 
+  // Sesi navbar berasal dari endpoint server, bukan state turunan saat render.
   useEffect(() => {
-    fetchSession();
-  }, [fetchSession]);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void loadSession();
+  }, [loadSession]);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-slate-800 bg-slate-900">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        <Link href="/" className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-sky-500 to-sky-700">
-            <Flame className="h-5 w-5 text-white" />
-          </div>
-          <div className="leading-tight">
-            <p className="text-sm font-bold text-white">PorTC</p>
-            <p className="text-[11px] text-slate-400">Pertamina Training & Consulting</p>
-          </div>
+    <header className="sticky top-0 z-50 border-b border-white/10 bg-[#101b2d]/95 text-white backdrop-blur">
+      <div className="mx-auto flex h-[68px] max-w-[1440px] items-center justify-between px-4 sm:px-8">
+        <Link href="/" className="group flex items-center gap-3" aria-label="PorTC beranda">
+          <span className="grid h-9 w-9 place-items-center bg-[#d92d20] font-serif text-xl font-bold text-white transition-transform group-hover:-rotate-3">
+            P
+          </span>
+          <span>
+            <span className="block text-sm font-black tracking-[0.16em]">PORTC</span>
+            <span className="hidden text-[10px] tracking-[0.08em] text-slate-400 sm:block">
+              LEARNING HUB / 2026
+            </span>
+          </span>
         </Link>
 
-        <nav className="flex items-center gap-1 sm:gap-2">
+        <nav className="flex items-center gap-1">
           <Link
             href="/trainings"
-            className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-300 transition hover:bg-slate-800 hover:text-white"
+            className="inline-flex items-center gap-2 px-3 py-2 text-sm font-semibold text-slate-200 hover:bg-white/10 hover:text-white"
           >
-            <GraduationCap className="h-4 w-4" />
-            <span className="hidden sm:inline">Katalog Pelatihan</span>
+            <BookOpen className="h-4 w-4" />
+            <span className="hidden sm:inline">Katalog</span>
           </Link>
 
-          {!loading && session ? (
+          {session ? (
             <>
-              {session.role === 'admin' ? (
-                <Link
-                  href="/admin/dashboard"
-                  className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-300 transition hover:bg-slate-800 hover:text-white"
-                >
+              <Link
+                href={session.role === 'Admin' ? '/admin/dashboard' : '/dashboard'}
+                className="inline-flex items-center gap-2 px-3 py-2 text-sm font-semibold text-slate-200 hover:bg-white/10 hover:text-white"
+              >
+                {session.role === 'Admin' ? (
                   <ShieldCheck className="h-4 w-4" />
-                  <span className="hidden sm:inline">Dashboard Admin</span>
-                </Link>
-              ) : (
-                <Link
-                  href="/dashboard"
-                  className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-300 transition hover:bg-slate-800 hover:text-white"
-                >
+                ) : (
                   <LayoutDashboard className="h-4 w-4" />
-                  <span className="hidden sm:inline">Dashboard Saya</span>
-                </Link>
-              )}
-
-              <div className="ml-1 flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-800/60 py-1.5 pl-2 pr-1.5">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-sky-500 to-sky-700">
-                  <User className="h-4 w-4 text-white" />
-                </div>
-                <div className="hidden leading-tight md:block">
-                  <p className="text-xs font-semibold text-white">{session.name}</p>
-                  <p className="text-[10px] text-slate-400">{session.email}</p>
-                </div>
-                <LogoutButton />
+                )}
+                <span className="hidden sm:inline">Dashboard</span>
+              </Link>
+              <span className="mx-2 hidden h-5 w-px bg-white/20 md:block" />
+              <div className="hidden text-right leading-tight md:block">
+                <p className="max-w-44 truncate text-xs font-bold">{session.fullName}</p>
+                <p className="text-[10px] text-slate-400">{session.nip}</p>
               </div>
+              <LogoutButton />
             </>
           ) : (
             <Link
               href="/login"
-              className="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-sky-700"
+              className="ml-2 inline-flex items-center gap-2 bg-white px-4 py-2 text-sm font-black text-[#101b2d] hover:bg-[#f4f1e9]"
             >
               <LogIn className="h-4 w-4" />
-              <span className="hidden sm:inline">Login</span>
+              Masuk
             </Link>
           )}
         </nav>

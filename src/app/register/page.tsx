@@ -1,284 +1,89 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import {
-  AlertCircle,
-  ArrowLeft,
-  Award,
-  Briefcase,
-  Eye,
-  EyeOff,
-  Flame,
-  Loader2,
-  Lock,
-  Mail,
-  User,
-} from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { AlertCircle, ArrowRight, Check, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { DEPARTMENTS } from '@/lib/auth';
 
 export default function RegisterPage() {
   const router = useRouter();
-
-  const [form, setForm] = useState({
-    name: '',
-    email: '',
-    nip: '',
-    department: '',
-    password: '',
-    confirmPassword: '',
-  });
+  const [form, setForm] = useState({ name: '', email: '', nip: '', department: '', password: '', confirmPassword: '' });
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleChange = (field: keyof typeof form) => (
-    event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
-  ) => {
-    setForm((prev) => ({ ...prev, [field]: event.target.value }));
+  const update = (field: keyof typeof form) => (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    setForm((current) => ({ ...current, [field]: event.target.value }));
     setError(null);
   };
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const submit = async (event: React.FormEvent) => {
     event.preventDefault();
-    setError(null);
-
-    if (!form.name.trim() || form.name.trim().length < 3) {
-      setError('Nama lengkap minimal 3 karakter.');
-      return;
-    }
-
-    if (!/^[a-zA-Z0-9._%+-]+@pertamina\.com$/.test(form.email.trim())) {
-      setError('Gunakan email Pertamina (@pertamina.com).');
-      return;
-    }
-
-    if (!/^\d{6,20}$/.test(form.nip.trim())) {
-      setError('NIP harus berupa angka 6–20 digit.');
-      return;
-    }
-
-    if (!form.department) {
-      setError('Silakan pilih departemen.');
-      return;
-    }
-
-    if (form.password.length < 8) {
-      setError('Password minimal 8 karakter.');
-      return;
-    }
-
-    if (form.password !== form.confirmPassword) {
-      setError('Konfirmasi password tidak cocok.');
-      return;
-    }
+    if (form.password !== form.confirmPassword) return setError('Konfirmasi password tidak sama.');
+    if (form.password.length < 8 || !/[A-Za-z]/.test(form.password) || !/\d/.test(form.password)) return setError('Password minimal 8 karakter serta memuat huruf dan angka.');
 
     setLoading(true);
     try {
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: form.name.trim(),
-          email: form.email.trim(),
-          nip: form.nip.trim(),
-          department: form.department,
-          password: form.password,
-        }),
+        body: JSON.stringify(form),
       });
-
-      const data = await response.json();
-
+      const payload = await response.json();
       if (!response.ok) {
-        setError(data.message || 'Registrasi gagal. Coba lagi.');
+        setError(payload.errors?.[0] ?? payload.message ?? 'Registrasi belum berhasil.');
         return;
       }
-
-      router.replace('/login?registered=1');
+      router.replace('/dashboard');
       router.refresh();
     } catch {
-      setError('Terjadi kesalahan jaringan. Coba lagi.');
+      setError('Layanan registrasi belum dapat dijangkau.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <main className="flex min-h-[calc(100vh-4rem)] items-center justify-center bg-slate-900 px-4 py-12">
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -right-32 -top-32 h-96 w-96 rounded-full bg-sky-500/10 blur-3xl" />
-        <div className="absolute -bottom-32 -left-32 h-96 w-96 rounded-full bg-red-500/10 blur-3xl" />
-      </div>
+    <main className="min-h-[calc(100vh-68px)] bg-[#f4f1e9]">
+      <div className="mx-auto grid max-w-[1200px] gap-12 px-5 py-14 sm:px-10 lg:grid-cols-[340px_1fr] lg:py-20">
+        <aside>
+          <p className="technical-label text-[#d92d20]">New employee profile</p>
+          <h1 className="display-type mt-4 text-6xl leading-[0.9]">Mulai dari profil yang akurat.</h1>
+          <p className="mt-7 text-sm leading-7 text-slate-600">Data di bawah digunakan sebagai identitas resmi pada setiap pendaftaran pelatihan.</p>
+          <ul className="mt-8 space-y-4 border-t border-[#101b2d]/20 pt-6 text-sm font-semibold">
+            {['Password disimpan sebagai BCrypt hash', 'Role awal selalu User', 'NIP dan email wajib unik'].map((item) => (
+              <li key={item} className="flex gap-3"><Check className="h-4 w-4 text-emerald-600" /> {item}</li>
+            ))}
+          </ul>
+        </aside>
 
-      <div className="relative w-full max-w-md">
-        <Link
-          href="/login"
-          className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-slate-400 transition hover:text-sky-400"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Kembali ke Login
-        </Link>
-
-        <div className="rounded-2xl border border-slate-700 bg-slate-800/80 p-8 shadow-xl backdrop-blur">
-          <div className="flex flex-col items-center text-center">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-500 to-sky-700 shadow-lg shadow-sky-500/20">
-              <Flame className="h-7 w-7 text-white" />
-            </div>
-            <h1 className="mt-4 text-2xl font-bold text-white">Registrasi Akun</h1>
-            <p className="mt-1 text-sm text-slate-400">
-              Daftar untuk mengakses portal pelatihan
-            </p>
+        <section className="bg-white p-6 sm:p-10 lg:p-12">
+          <div className="flex items-end justify-between border-b border-[#101b2d]/20 pb-6">
+            <div><p className="technical-label text-slate-500">Form 01</p><h2 className="display-type mt-2 text-4xl">Buat akun</h2></div>
+            <Link href="/login" className="text-sm font-black text-[#d92d20]">Sudah punya akun?</Link>
           </div>
 
-          {error && (
-            <div className="mt-6 flex items-start gap-3 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
-              <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
-              <span>{error}</span>
-            </div>
-          )}
+          {error && <div className="mt-6 flex gap-3 border border-[#d92d20] bg-red-50 p-4 text-sm text-[#b42318]"><AlertCircle className="h-5 w-5 shrink-0" /> {error}</div>}
 
-          <form onSubmit={handleSubmit} className="mt-6 space-y-4" noValidate>
-            <div>
-              <label className="mb-1.5 flex items-center gap-1.5 text-sm font-medium text-slate-300">
-                <User className="h-4 w-4 text-sky-400" />
-                Nama Lengkap
-              </label>
-              <input
-                type="text"
-                value={form.name}
-                onChange={handleChange('name')}
-                placeholder="Nama lengkap sesuai KTP"
-                required
-                className="w-full rounded-lg border border-slate-600 bg-slate-900 px-3.5 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/40"
-              />
-            </div>
-
-            <div>
-              <label className="mb-1.5 flex items-center gap-1.5 text-sm font-medium text-slate-300">
-                <Mail className="h-4 w-4 text-sky-400" />
-                Email Pertamina
-              </label>
-              <input
-                type="email"
-                value={form.email}
-                onChange={handleChange('email')}
-                placeholder="nama@pertamina.com"
-                required
-                className="w-full rounded-lg border border-slate-600 bg-slate-900 px-3.5 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/40"
-              />
-            </div>
-
-            <div>
-              <label className="mb-1.5 flex items-center gap-1.5 text-sm font-medium text-slate-300">
-                <Award className="h-4 w-4 text-sky-400" />
-                NIP Karyawan
-              </label>
-              <input
-                type="text"
-                value={form.nip}
-                onChange={handleChange('nip')}
-                placeholder="Contoh: 12345678"
-                required
-                className="w-full rounded-lg border border-slate-600 bg-slate-900 px-3.5 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/40"
-              />
-            </div>
-
-            <div>
-              <label className="mb-1.5 flex items-center gap-1.5 text-sm font-medium text-slate-300">
-                <Briefcase className="h-4 w-4 text-sky-400" />
-                Departemen
-              </label>
-              <select
-                value={form.department}
-                onChange={handleChange('department')}
-                required
-                className="w-full rounded-lg border border-slate-600 bg-slate-900 px-3.5 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/40"
-              >
-                <option value="">Pilih Departemen</option>
-                {DEPARTMENTS.map((department) => (
-                  <option key={department} value={department}>
-                    {department}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="mb-1.5 flex items-center gap-1.5 text-sm font-medium text-slate-300">
-                <Lock className="h-4 w-4 text-sky-400" />
-                Password
-              </label>
-              <div className="relative">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  value={form.password}
-                  onChange={handleChange('password')}
-                  placeholder="Minimal 8 karakter"
-                  required
-                  className="w-full rounded-lg border border-slate-600 bg-slate-900 px-3.5 py-2.5 pr-11 text-sm text-white placeholder:text-slate-500 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/40"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((prev) => !prev)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-200"
-                  aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
-                >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-            </div>
-
-            <div>
-              <label className="mb-1.5 flex items-center gap-1.5 text-sm font-medium text-slate-300">
-                <Lock className="h-4 w-4 text-sky-400" />
-                Konfirmasi Password
-              </label>
-              <div className="relative">
-                <input
-                  type={showConfirmPassword ? 'text' : 'password'}
-                  value={form.confirmPassword}
-                  onChange={handleChange('confirmPassword')}
-                  placeholder="Ulangi password"
-                  required
-                  className="w-full rounded-lg border border-slate-600 bg-slate-900 px-3.5 py-2.5 pr-11 text-sm text-white placeholder:text-slate-500 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/40"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword((prev) => !prev)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-200"
-                  aria-label={showConfirmPassword ? 'Sembunyikan password' : 'Tampilkan password'}
-                >
-                  {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-sky-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Mendaftarkan...
-                </>
-              ) : (
-                'Daftar'
-              )}
+          <form onSubmit={submit} className="mt-8 grid gap-5 sm:grid-cols-2">
+            <Field label="Nama lengkap"><input required minLength={3} autoComplete="name" value={form.name} onChange={update('name')} /></Field>
+            <Field label="NIP karyawan"><input required pattern="[0-9]{6,20}" inputMode="numeric" value={form.nip} onChange={update('nip')} /></Field>
+            <Field label="Email Pertamina" className="sm:col-span-2"><input required type="email" pattern=".+@pertamina\.com" autoComplete="email" placeholder="nama@pertamina.com" value={form.email} onChange={update('email')} /></Field>
+            <Field label="Departemen" className="sm:col-span-2"><select required value={form.department} onChange={update('department')}><option value="">Pilih departemen</option>{DEPARTMENTS.map((item) => <option key={item}>{item}</option>)}</select></Field>
+            <Field label="Password"><span className="relative block"><input required type={showPassword ? 'text' : 'password'} autoComplete="new-password" value={form.password} onChange={update('password')} /><button type="button" onClick={() => setShowPassword((value) => !value)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500" aria-label="Tampilkan password">{showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</button></span></Field>
+            <Field label="Konfirmasi password"><input required type="password" autoComplete="new-password" value={form.confirmPassword} onChange={update('confirmPassword')} /></Field>
+            <button disabled={loading} className="mt-2 flex items-center justify-center gap-3 bg-[#101b2d] px-5 py-4 text-sm font-black text-white hover:bg-[#d92d20] disabled:opacity-60 sm:col-span-2">
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
+              {loading ? 'Membuat akun…' : 'Buat akun dan masuk'}
             </button>
           </form>
-
-          <p className="mt-6 text-center text-sm text-slate-400">
-            Sudah punya akun?{' '}
-            <Link href="/login" className="font-semibold text-sky-400 transition hover:text-sky-300">
-              Masuk di sini
-            </Link>
-          </p>
-        </div>
+        </section>
       </div>
     </main>
   );
+}
+
+function Field({ label, className = '', children }: { label: string; className?: string; children: React.ReactNode }) {
+  return <label className={`block ${className}`}><span className="technical-label text-slate-500">{label}</span><span className="mt-2 block [&_input]:w-full [&_input]:border [&_input]:border-[#101b2d]/30 [&_input]:px-4 [&_input]:py-3.5 [&_input]:outline-none [&_input]:focus:border-[#d92d20] [&_select]:w-full [&_select]:border [&_select]:border-[#101b2d]/30 [&_select]:bg-white [&_select]:px-4 [&_select]:py-3.5 [&_select]:outline-none [&_select]:focus:border-[#d92d20]">{children}</span></label>;
 }
