@@ -1,10 +1,13 @@
 'use client';
 
 import { Suspense, useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { AlertCircle, ArrowLeft, Eye, EyeOff, Flame, Loader2, Lock, Mail } from 'lucide-react';
+import { AlertCircle, ArrowLeft, Eye, EyeOff, Loader2, Lock, Mail } from 'lucide-react';
+import ptcLogo from '@/app/ptc.png';
 import { validatePertaminaEmail } from '@/lib/validation';
+import { notifyAuthSessionChanged } from '@/lib/auth-events';
 
 function LoginForm() {
   const router = useRouter();
@@ -42,6 +45,7 @@ function LoginForm() {
 
       const requested = searchParams.get('from');
       const safeRequested = requested?.startsWith('/') && !requested.startsWith('//') ? requested : null;
+      notifyAuthSessionChanged();
       router.replace(safeRequested ?? (payload.user.role === 'Admin' ? '/admin/dashboard' : '/dashboard'));
       router.refresh();
     } catch {
@@ -102,7 +106,7 @@ export default function LoginPage() {
       <div className="relative w-full max-w-md">
         <Link href="/" className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-slate-400 hover:text-sky-400"><ArrowLeft className="h-4 w-4" /> Kembali ke Beranda</Link>
         <div className="rounded-2xl border border-slate-700 bg-slate-800/80 p-7 shadow-xl backdrop-blur sm:p-8">
-          <div className="flex flex-col items-center text-center"><span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-500 to-sky-700 shadow-lg shadow-sky-500/20"><Flame className="h-7 w-7" /></span><h1 className="mt-4 text-2xl font-bold">Login PorTC</h1><p className="mt-1 text-sm text-slate-400">Masuk untuk mengakses dashboard Anda</p></div>
+          <div className="flex flex-col items-center text-center"><span className="rounded-xl bg-white px-4 py-2 shadow-lg"><Image src={ptcLogo} alt="PTC Pertamina Training & Consulting" priority className="h-12 w-auto object-contain" /></span><h1 className="mt-4 text-2xl font-bold">Login PTC Training</h1><p className="mt-1 text-sm text-slate-400">Masuk untuk mengakses dashboard Anda</p></div>
           <Suspense fallback={<div className="mt-8 flex justify-center"><Loader2 className="h-5 w-5 animate-spin text-sky-400" /></div>}><LoginForm /></Suspense>
         </div>
       </div>

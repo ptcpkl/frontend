@@ -2,6 +2,7 @@
 
 import { LogOut } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { notifyAuthSessionChanged } from '@/lib/auth-events';
 
 export default function LogoutButton() {
   const router = useRouter();
@@ -13,6 +14,7 @@ export default function LogoutButton() {
         try {
           await fetch('/api/auth/logout', { method: 'POST' });
         } finally {
+          notifyAuthSessionChanged();
           router.replace('/login');
           router.refresh();
         }

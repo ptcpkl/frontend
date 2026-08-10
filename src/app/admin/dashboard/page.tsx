@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { AlertCircle, BookOpen, Check, Edit3, Loader2, Plus, RefreshCw, Search, Trash2, Users, X } from 'lucide-react';
+import { AlertCircle, BookOpen, Check, CheckCircle2, Clock, Edit3, LayoutDashboard, Loader2, Plus, RefreshCw, Search, Trash2, Users, X, XCircle } from 'lucide-react';
 import { ApiError, BookingService, DashboardService, TrainingService } from '@/lib/api';
 import type { Booking, BookingStatus, DashboardSummary, Training, TrainingInput } from '@/types';
 
@@ -88,13 +88,18 @@ export default function AdminDashboardPage() {
     finally { setBusyId(null); }
   };
 
-  const metrics = [['Program', summary?.totalTrainings ?? trainings.length], ['Pendaftaran', summary?.totalBookings ?? bookings.length], ['Menunggu', summary?.pendingBookings ?? 0], ['Disetujui', summary?.approvedBookings ?? 0]];
+  const metrics = [
+    { label: 'Total Pendaftaran', value: summary?.totalBookings ?? bookings.length, icon: <Users />, accent: 'bg-slate-100 text-slate-700' },
+    { label: 'Menunggu', value: summary?.pendingBookings ?? 0, icon: <Clock />, accent: 'bg-amber-50 text-amber-700' },
+    { label: 'Disetujui', value: summary?.approvedBookings ?? 0, icon: <CheckCircle2 />, accent: 'bg-emerald-50 text-emerald-700' },
+    { label: 'Ditolak', value: summary?.rejectedBookings ?? 0, icon: <XCircle />, accent: 'bg-rose-50 text-rose-700' },
+  ];
 
   return (
     <main className="min-h-screen bg-slate-50">
-      <header className="bg-slate-900 text-white"><div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8"><div className="flex flex-col justify-between gap-6 sm:flex-row sm:items-end"><div><p className="text-sm font-semibold uppercase tracking-wider text-sky-400">Dashboard Admin</p><h1 className="mt-3 text-3xl font-bold sm:text-4xl">Kelola Pelatihan PorTC</h1><p className="mt-2 text-sm text-slate-400">Persetujuan peserta dan katalog dalam satu halaman.</p></div><button type="button" onClick={() => void load()} disabled={loading} className="inline-flex w-fit items-center gap-2 rounded-lg border border-slate-700 px-4 py-2.5 text-sm font-semibold hover:bg-slate-800"><RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} /> Sinkronkan</button></div></div></header>
+      <header className="bg-slate-900 text-white"><div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8"><div className="flex flex-wrap items-center justify-between gap-4"><div className="flex items-center gap-3"><span className="flex h-11 w-11 items-center justify-center rounded-xl bg-sky-500/15 ring-1 ring-inset ring-sky-500/30"><LayoutDashboard className="h-6 w-6 text-sky-400" /></span><div><h1 className="text-2xl font-bold sm:text-3xl">Dashboard Admin PTC</h1><p className="mt-1 text-sm text-slate-300">Kelola pendaftaran peserta dan katalog pelatihan.</p></div></div><button type="button" onClick={() => void load()} disabled={loading} className="inline-flex w-fit items-center gap-2 rounded-lg border border-slate-700 px-4 py-2.5 text-sm font-semibold hover:bg-slate-800 disabled:opacity-50"><RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} /> Muat Ulang</button></div></div></header>
       <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{metrics.map(([label, value]) => <div key={label} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><p className="text-sm text-slate-500">{label}</p><p className="mt-2 text-3xl font-bold">{value}</p></div>)}</div>
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">{metrics.map((metric) => <div key={metric.label} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><span className={`flex h-10 w-10 items-center justify-center rounded-lg [&_svg]:h-5 [&_svg]:w-5 ${metric.accent}`}>{metric.icon}</span><p className="mt-3 text-2xl font-bold text-slate-900">{metric.value}</p><p className="text-sm text-slate-500">{metric.label}</p></div>)}</div>
         {error && <div role="alert" className="mt-6 flex gap-3 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800"><AlertCircle className="h-5 w-5 shrink-0" />{error}</div>}
         {notice && <div role="status" className="mt-6 flex gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800"><Check className="h-5 w-5 shrink-0" />{notice}</div>}
 
