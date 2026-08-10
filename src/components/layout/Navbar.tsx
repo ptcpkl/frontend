@@ -1,10 +1,10 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  Flame,
   GraduationCap,
   LayoutDashboard,
   LogIn,
@@ -13,7 +13,9 @@ import {
   User,
   X,
 } from 'lucide-react';
+import ptcLogo from '@/app/ptc.png';
 import type { SessionUser } from '@/lib/auth';
+import { AUTH_SESSION_CHANGED_EVENT } from '@/lib/auth-events';
 import LogoutButton from './LogoutButton';
 
 export default function Navbar() {
@@ -35,9 +37,24 @@ export default function Navbar() {
   }, []);
 
   useEffect(() => {
-    // Navbar menyinkronkan session server setiap route berubah.
+    // Navbar membaca session server ketika layout dimuat atau route berubah.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void fetchSession();
+
+    const syncSession = () => void fetchSession();
+    const syncVisibleSession = () => {
+      if (document.visibilityState === 'visible') void fetchSession();
+    };
+
+    window.addEventListener(AUTH_SESSION_CHANGED_EVENT, syncSession);
+    window.addEventListener('pageshow', syncSession);
+    document.addEventListener('visibilitychange', syncVisibleSession);
+
+    return () => {
+      window.removeEventListener(AUTH_SESSION_CHANGED_EVENT, syncSession);
+      window.removeEventListener('pageshow', syncSession);
+      document.removeEventListener('visibilitychange', syncVisibleSession);
+    };
   }, [fetchSession, pathname]);
 
   const dashboardHref = session?.role === 'Admin' ? '/admin/dashboard' : '/dashboard';
@@ -45,14 +62,13 @@ export default function Navbar() {
   return (
     <header className="sticky top-0 z-50 border-b border-slate-800 bg-slate-900 text-white shadow-sm">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        <Link href="/" className="flex items-center gap-3" aria-label="PorTC beranda">
-          <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-sky-500 to-sky-700">
-            <Flame className="h-5 w-5 text-white" />
-          </span>
-          <span className="leading-tight">
-            <span className="block text-sm font-bold text-white">PorTC</span>
-            <span className="hidden text-[11px] text-slate-400 sm:block">Pertamina Training & Consulting</span>
-          </span>
+        <Link href="/" className="rounded-lg bg-white px-2.5 py-1 shadow-sm" aria-label="PTC Training beranda">
+          <Image
+            src={ptcLogo}
+            alt="PTC Pertamina Training & Consulting"
+            priority
+            className="h-9 w-auto object-contain"
+          />
         </Link>
 
         <nav className="hidden items-center gap-1 md:flex">

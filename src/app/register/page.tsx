@@ -1,11 +1,14 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { AlertCircle, ArrowLeft, Briefcase, Eye, EyeOff, Flame, Loader2, Lock, Mail, User } from 'lucide-react';
+import { AlertCircle, ArrowLeft, Briefcase, Eye, EyeOff, Loader2, Lock, Mail, User } from 'lucide-react';
+import ptcLogo from '@/app/ptc.png';
 import { DEPARTMENTS } from '@/lib/auth';
 import { fieldForServerError, validateNip, validatePertaminaEmail } from '@/lib/validation';
+import { notifyAuthSessionChanged } from '@/lib/auth-events';
 
 type FormState = { name: string; email: string; nip: string; department: string; password: string; confirmPassword: string };
 type FieldName = keyof FormState;
@@ -57,6 +60,7 @@ export default function RegisterPage() {
         else setGeneralError(message);
         return;
       }
+      notifyAuthSessionChanged();
       router.replace('/dashboard?registered=1');
       router.refresh();
     } catch {
@@ -72,7 +76,7 @@ export default function RegisterPage() {
       <div className="relative mx-auto w-full max-w-3xl">
         <Link href="/login" className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-slate-400 hover:text-sky-400"><ArrowLeft className="h-4 w-4" /> Kembali ke Login</Link>
         <section className="rounded-2xl border border-slate-700 bg-slate-800/85 p-6 shadow-xl backdrop-blur sm:p-9">
-          <div className="flex flex-col items-center text-center"><span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-500 to-sky-700"><Flame className="h-7 w-7" /></span><h1 className="mt-4 text-2xl font-bold">Registrasi Akun</h1><p className="mt-1 text-sm text-slate-400">Gunakan identitas karyawan Pertamina yang benar</p></div>
+          <div className="flex flex-col items-center text-center"><span className="rounded-xl bg-white px-4 py-2 shadow-lg"><Image src={ptcLogo} alt="PTC Pertamina Training & Consulting" priority className="h-12 w-auto object-contain" /></span><h1 className="mt-4 text-2xl font-bold">Registrasi Akun</h1><p className="mt-1 text-sm text-slate-400">Gunakan identitas karyawan Pertamina yang benar</p></div>
           {generalError && <div role="alert" className="mt-6 flex gap-3 rounded-xl border border-rose-500/30 bg-rose-500/10 p-4 text-sm text-rose-200"><AlertCircle className="h-5 w-5 shrink-0" />{generalError}</div>}
 
           <form onSubmit={submit} noValidate className="mt-7 grid gap-5 sm:grid-cols-2">
